@@ -42,3 +42,7 @@ entry("rt");
 entry("roffset");
 entry("ramload");
 entry("list");
+##
+entry("create_thread");
+entry("join_thread");
+entry("stop_thread");

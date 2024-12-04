@@ -778,3 +778,28 @@ sys_list(void){
   }
   return 0;
 }
+
+
+uint64
+sys_create_thread(void){
+
+  //TBD
+
+  return 0;
+}
+
+uint64
+sys_join_thread(void){
+
+  //TBD
+  
+  return 0;
+}
+
+uint64
+sys_stop_thread(void){
+
+  //TBD
+  
+  return 0;
+}
