@@ -26,3 +26,7 @@
 #define SYS_roffset 25
 #define SYS_ramload 26
 #define SYS_list 27
+//
+#define SYS_create_thread 28
+#define SYS_join_thread 29
+#define SYS_stop_thread 30
