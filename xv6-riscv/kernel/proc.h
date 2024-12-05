@@ -95,7 +95,7 @@ enum threadstate {
 struct thread {
   enum threadstate state;
   struct trapframe *trapframe;
-  //struct context *context;
+  struct context *context;
   uint id;
   uint join;
 };

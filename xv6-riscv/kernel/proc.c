@@ -127,6 +127,7 @@ allocproc(void)
 found:
   p->pid = allocpid();
   p->state = USED;
+  p->current_thread= NULL;
 
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
@@ -285,7 +286,7 @@ fork(void)
   int i, pid;
   struct proc *np;
   struct proc *p = myproc();
-
+  
   // Allocate process.
   if((np = allocproc()) == 0){
     return -1;
@@ -779,11 +780,60 @@ sys_list(void){
   return 0;
 }
 
+int nextID= 0;
+
+int
+generate_thread_id(struct proc* p){
+  acquire(&p->lock);
+  nextID++;
+  release(&p->lock);
+  return nextID;
+}
 
 uint64
 sys_create_thread(void){
+  uint *thread_id;
+  void *(*function)(void *arg);
+  void *arg;
+  void *stack;
+  uint64 stack_size;
+  struct thread* t;
+  struct proc* p;
+  
+  argaddr(0, (uint64 *)&thread_id);
+  argaddr(1, (uint64 *)&function);
+  argaddr(2, (uint64 *)&arg);
+  argaddr(3, (uint64 *)&stack);
+  argaddr(4, (uint64 *)&stack_size);
 
-  //TBD
+  p= myproc();
+  acquire(&p->lock);
+  if(p->thread_count > 4){
+    release(&p->lock);
+    return -1;
+  }
+  
+  for(t= p->threads; t< &p->threads[MAX_THREAD]; t++){
+    if(t->state == THREAD_FREE){
+      t->state= RUNNABLE;
+      t->id= generate_thread_id(p);
+      t->join= 0;
+      t->trapframe = (struct trapframe *)kalloc();
+      t->context = (struct context *)kalloc();
+      memset(t->trapframe, 0, sizeof(*t->trapframe));
+      t->trapframe->epc = (uint64)function;                   
+      t->trapframe->sp = (uint64)stack + stack_size - 16;     
+      t->trapframe->a0 = (uint64)arg;                         
+      t->context->ra = (uint64)sys_stop_thread; //TBD                   
+      t->context->sp = t->trapframe->sp;
+
+      copyout(p->pagetable, (uint64)thread_id, (char *)&t->id, sizeof(t->id));
+      p->thread_count++;
+      release(&p->lock);
+      return 0;
+    }
+  }
+
 
   return 0;
 }
