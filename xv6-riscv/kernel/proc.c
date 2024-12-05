@@ -467,8 +467,22 @@ scheduler(void)
         // before jumping back to us.
         p->state = RUNNING;
         c->proc = p;
-        swtch(&c->context, &p->context);
-
+        int flag= 0;
+        struct trapframe tmp= *(p->trapframe); 
+        for(struct thread* x=p->threads; x < &p->threads[MAX_THREAD]; x++){
+          if(x->state != THREAD_JOINED && x->state != THREAD_FREE){
+            *(p->trapframe) = *(x->trapframe);
+            x->state= THREAD_RUNNING;
+            swtch(&c->context, &p->context);
+            flag= 1;
+            x->state= THREAD_RUNNABLE;
+          }
+          else
+            continue;
+        }
+        *(p->trapframe)= tmp;
+        if(!flag)
+          swtch(&c->context, &p->context);
         // Process is done running for now.
         // It should have changed its p->state before coming back.
         c->proc = 0;
@@ -788,21 +802,11 @@ generate_thread_id(struct proc* p){
   return nextID;
 }
 
-uint64
-sys_create_thread(void){
-  uint *thread_id;
-  void *(*function)(void *arg);
-  void *arg;
-  void *stack;
-  uint64 stack_size;
+int
+create_thread(uint* thread_id, void *(*function)(void *arg), void *arg, void *stack, uint64 stack_size){
+
   struct thread* t;
   struct proc* p;
-  
-  argaddr(0, (uint64 *)&thread_id);
-  argaddr(1, (uint64 *)&function);
-  argaddr(2, (uint64 *)&arg);
-  argaddr(3, (uint64 *)&stack);
-  argaddr(4, (uint64 *)&stack_size);
 
   p= myproc();
   acquire(&p->lock);
@@ -813,17 +817,15 @@ sys_create_thread(void){
   
   for(t= p->threads; t< &p->threads[MAX_THREAD]; t++){
     if(t->state == THREAD_FREE){
-      t->state= RUNNABLE;
+      t->state= THREAD_RUNNABLE;
       t->id= generate_thread_id(p);
       t->join= 0;
       t->trapframe = (struct trapframe *)kalloc();
-      t->context = (struct context *)kalloc();
       memset(t->trapframe, 0, sizeof(*t->trapframe));
       t->trapframe->epc = (uint64)function;                   
-      t->trapframe->sp = (uint64)stack + stack_size - 16;     
+      t->trapframe->sp = (uint64)stack + stack_size;     
       t->trapframe->a0 = (uint64)arg;                         
-      t->context->ra = (uint64)sys_stop_thread; //TBD                   
-      t->context->sp = t->trapframe->sp;
+      t->trapframe->ra = (uint64)stop_thread;                    
 
       copyout(p->pagetable, (uint64)thread_id, (char *)&t->id, sizeof(t->id));
       p->thread_count++;
@@ -845,9 +847,15 @@ sys_join_thread(void){
 }
 
 uint64
-sys_stop_thread(void){
+stop_thread(uint64 thread_id){
+  for(int i= 0; i< NPROC; i++)
+    for(struct thread* t= proc[i].threads; t < &proc[i].threads[MAX_THREAD]; t++)
+      if(t->id == thread_id){
+        t->state = THREAD_FREE;
+        kfree(t->trapframe);
+        proc[i].thread_count --;
+      }
+   
 
-  //TBD
-  
   return 0;
 }

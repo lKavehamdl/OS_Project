@@ -117,9 +117,9 @@ uint64          sys_rt(void);
 uint64          sys_cp(void);
 uint64          sys_list(void);
 //   
-uint64          sys_create_thread(void);
+int             create_thread(uint*, void *(*)(void *), void*, void*, uint64);
 uint64          sys_join_thread(void);
-uint64          sys_stop_thread(void); 
+uint64          stop_thread(uint64); 
 
 
 // swtch.S
