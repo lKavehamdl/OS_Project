@@ -143,9 +143,9 @@ UPROGS=\
 	$U/_cp\
 	$U/_rt\
 	$U/_list\
-	$U/_create_thread\
-	$U/_join_thread\
-	$U/_stop_thread\
+	$U/_thread_test\
+	# $U/_join_thread\
+	# $U/_stop_thread\
 	
 
 fs.img: mkfs/mkfs README $(UPROGS)
