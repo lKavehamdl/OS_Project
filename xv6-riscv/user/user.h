@@ -31,6 +31,8 @@ int rt(struct report_traps*);
 int roffset(int fd, int KOMAK);
 int ramload(void);
 int list(void);
+//
+int create_thread(uint *, void *(*)(void *arg), void *, void *, uint64);
 
 // ulib.c
 int stat(const char*, struct stat*);
