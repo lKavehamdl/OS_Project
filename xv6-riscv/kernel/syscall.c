@@ -144,7 +144,7 @@ static uint64 (*syscalls[])(void) = {
 [SYS_list]    sys_list,
 [SYS_create_thread] sys_create_thread,
 [SYS_join_thread] sys_join_thread,
-[SYS_stop_thread] sys_stop_thread
+[SYS_stop_thread] sys_stop_thread,
 };
 
 void
