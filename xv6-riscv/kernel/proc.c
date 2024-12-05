@@ -784,9 +784,7 @@ int nextID= 0;
 
 int
 generate_thread_id(struct proc* p){
-  acquire(&p->lock);
   nextID++;
-  release(&p->lock);
   return nextID;
 }
 
@@ -834,8 +832,8 @@ sys_create_thread(void){
     }
   }
 
-
-  return 0;
+  release(&p->lock);
+  return -1;
 }
 
 uint64
