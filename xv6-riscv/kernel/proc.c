@@ -480,7 +480,6 @@ scheduler(void)
         int flag= 0;
         struct trapframe tmp= *(p->trapframe); 
         for(struct thread* x=p->threads; x < &p->threads[MAX_THREAD]; x++){
-          // printf(" == ID: %d State:%d == \n", x->id, x->state);
           if(x->state == THREAD_RUNNABLE){
             *(p->trapframe) = *(x->trapframe);
             x->state= THREAD_RUNNING;
@@ -490,7 +489,9 @@ scheduler(void)
             if(p->current_thread->state == THREAD_FREE){
               break;
             }
-            // stop_thread(x->id);
+            if(p->current_thread->state == THREAD_RUNNING){
+              p->current_thread->state= THREAD_RUNNABLE;
+            }
             if(p->thread_count > 1)
               p->state= RUNNABLE;
           }
@@ -866,7 +867,6 @@ sys_join_thread(void){
 
 uint64
 stop_thread(uint64 thread_id){
-  // printf("KOMAK!\n");
   struct proc* p= myproc();
   for(struct thread* t = p->threads; t<= &p->threads[MAX_THREAD]; t++){
     if(t->id == thread_id){

@@ -55,7 +55,6 @@ usertrap(void)
   p->trapframe->epc = r_sepc();
 
   if(p->trapframe->epc == -2 && p->trapframe->ra == -1){
-    printf(" trap! %d \n", p->current_thread->id);
     stop_thread(p->current_thread->id);
     usertrapret();
     return;
