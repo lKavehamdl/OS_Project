@@ -129,6 +129,10 @@ found:
   p->state = USED;
   p->current_thread= NULL;
 
+  for(struct thread* t= p->threads; t <= &p->threads[MAX_THREAD]; t++){
+    t->state= THREAD_FREE;
+  }
+
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
     freeproc(p);
@@ -364,6 +368,12 @@ exit(int status)
     }
   }
 
+  // for(struct thread* t= p->threads; t <= &p->threads[MAX_THREAD]; t++)
+  //   if(t->state != THREAD_FREE)
+  //     if(stop_thread(t->id) == -1)
+  //       printf("NU UH\n");
+    
+
   begin_op();
   iput(p->cwd);
   end_op();
@@ -470,12 +480,19 @@ scheduler(void)
         int flag= 0;
         struct trapframe tmp= *(p->trapframe); 
         for(struct thread* x=p->threads; x < &p->threads[MAX_THREAD]; x++){
-          if(x->state != THREAD_JOINED && x->state != THREAD_FREE){
+          // printf(" == ID: %d State:%d == \n", x->id, x->state);
+          if(x->state == THREAD_RUNNABLE){
             *(p->trapframe) = *(x->trapframe);
             x->state= THREAD_RUNNING;
+            p->current_thread= x;
             swtch(&c->context, &p->context);
             flag= 1;
-            x->state= THREAD_RUNNABLE;
+            if(p->current_thread->state == THREAD_FREE){
+              break;
+            }
+            // stop_thread(x->id);
+            if(p->thread_count > 1)
+              p->state= RUNNABLE;
           }
           else
             continue;
@@ -486,6 +503,7 @@ scheduler(void)
         // Process is done running for now.
         // It should have changed its p->state before coming back.
         c->proc = 0;
+        flag= 0;
         found = 1;
       }
       release(&p->lock);
@@ -810,7 +828,7 @@ create_thread(uint* thread_id, void *(*function)(void *arg), void *arg, void *st
 
   p= myproc();
   acquire(&p->lock);
-  if(p->thread_count > 4){
+  if(p->thread_count >= 4){
     release(&p->lock);
     return -1;
   }
@@ -825,7 +843,7 @@ create_thread(uint* thread_id, void *(*function)(void *arg), void *arg, void *st
       t->trapframe->epc = (uint64)function;                   
       t->trapframe->sp = (uint64)stack + stack_size;     
       t->trapframe->a0 = (uint64)arg;                         
-      t->trapframe->ra = (uint64)stop_thread;                    
+      t->trapframe->ra = (uint64)-1;      
 
       copyout(p->pagetable, (uint64)thread_id, (char *)&t->id, sizeof(t->id));
       p->thread_count++;
@@ -848,14 +866,18 @@ sys_join_thread(void){
 
 uint64
 stop_thread(uint64 thread_id){
-  for(int i= 0; i< NPROC; i++)
-    for(struct thread* t= proc[i].threads; t < &proc[i].threads[MAX_THREAD]; t++)
-      if(t->id == thread_id){
-        t->state = THREAD_FREE;
-        kfree(t->trapframe);
-        proc[i].thread_count --;
-      }
-   
+  // printf("KOMAK!\n");
+  struct proc* p= myproc();
+  for(struct thread* t = p->threads; t<= &p->threads[MAX_THREAD]; t++){
+    if(t->id == thread_id){
+      t->state= THREAD_FREE;
+      p->thread_count --;
+      kfree(t->trapframe);
+      yield();
+      return 0;
+    }
+  }
 
-  return 0;
+  yield();
+  return -1;
 }

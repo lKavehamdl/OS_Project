@@ -53,7 +53,14 @@ usertrap(void)
   
   // save user program counter.
   p->trapframe->epc = r_sepc();
-  
+
+  if(p->trapframe->epc == -2 && p->trapframe->ra == -1){
+    printf(" trap! %d \n", p->current_thread->id);
+    stop_thread(p->current_thread->id);
+    usertrapret();
+    return;
+  }
+
   if(r_scause() == 8){
     // system call
 
