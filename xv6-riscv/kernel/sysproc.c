@@ -116,3 +116,10 @@ sys_stop_thread(){
   argaddr(0, &thread_id);
   return stop_thread(thread_id);
 }
+
+uint64
+sys_join_thread(){
+  uint64 thread_id;
+  argaddr(0, &thread_id);
+  return join_thread(thread_id);
+}

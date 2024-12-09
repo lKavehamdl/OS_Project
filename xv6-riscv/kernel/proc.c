@@ -858,10 +858,8 @@ create_thread(uint* thread_id, void *(*function)(void *arg), void *arg, void *st
 }
 
 uint64
-sys_join_thread(void){
-
+join_thread(uint64 thread_id){
   //TBD
-  
   return 0;
 }
 
