@@ -34,6 +34,7 @@ int list(void);
 //
 int create_thread(uint *, void *(*)(void *arg), void *, void *, uint64);
 uint64 stop_thread(uint64 );
+uint64 join_thread(uint64);
 
 // ulib.c
 int stat(const char*, struct stat*);

@@ -128,6 +128,7 @@ found:
   p->pid = allocpid();
   p->state = USED;
   p->current_thread= NULL;
+  p->join= 0;
 
   for(struct thread* t= p->threads; t <= &p->threads[MAX_THREAD]; t++){
     t->state= THREAD_FREE;
@@ -499,7 +500,7 @@ scheduler(void)
             continue;
         }
         *(p->trapframe)= tmp;
-        if(!flag)
+        if(!flag && !p->join)
           swtch(&c->context, &p->context);
         // Process is done running for now.
         // It should have changed its p->state before coming back.
@@ -838,17 +839,16 @@ create_thread(uint* thread_id, void *(*function)(void *arg), void *arg, void *st
     if(t->state == THREAD_FREE){
       t->state= THREAD_RUNNABLE;
       t->id= generate_thread_id(p);
-      t->join= 0;
       t->trapframe = (struct trapframe *)kalloc();
       memset(t->trapframe, 0, sizeof(*t->trapframe));
       t->trapframe->epc = (uint64)function;                   
       t->trapframe->sp = (uint64)stack + stack_size;     
       t->trapframe->a0 = (uint64)arg;                         
       t->trapframe->ra = (uint64)-1;      
-
       copyout(p->pagetable, (uint64)thread_id, (char *)&t->id, sizeof(t->id));
       p->thread_count++;
       release(&p->lock);
+      yield();
       return 0;
     }
   }
@@ -858,10 +858,16 @@ create_thread(uint* thread_id, void *(*function)(void *arg), void *arg, void *st
 }
 
 uint64
-sys_join_thread(void){
+join_thread(uint64 thread_id){
 
-  //TBD
-  
+  struct proc* p= myproc();
+  struct thread* t= p->threads;
+  for(; t<= &p->threads[MAX_THREAD]; t++)
+    if(t->id == thread_id)
+      break;
+
+  p->join= thread_id;
+
   return 0;
 }
 
@@ -870,9 +876,10 @@ stop_thread(uint64 thread_id){
   struct proc* p= myproc();
   for(struct thread* t = p->threads; t<= &p->threads[MAX_THREAD]; t++){
     if(t->id == thread_id){
-      t->state= THREAD_FREE;
+      t->state= THREAD_JOINED;
       p->thread_count --;
-      kfree(t->trapframe);
+      p->join = 0;
+      kfree(t->trapframe);  
       yield();
       return 0;
     }

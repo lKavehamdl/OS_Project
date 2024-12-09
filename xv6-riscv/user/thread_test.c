@@ -31,20 +31,18 @@ int main(int argc, char *argv){
     // uint thread_id_4;
     // void *stack_4 = malloc(820);
 
-
+    create_thread(&thread_id, test_func, 0, stack, 820);
     create_thread(&thread_id_1, test_func, 0, stack_1, 820);
     create_thread(&thread_id_2, test_func, 0, stack_2, 820);
-    create_thread(&thread_id, test_func, 0, stack, 820);
     create_thread(&thread_id_3, test_func, 0, stack_3, 820);
     //create_thread(&thread_id_4, test_func, 0, stack_4, 820);
 
+    join_thread(thread_id);
+    join_thread(thread_id_1);
+    join_thread(thread_id_2);
+    join_thread(thread_id_3);
 
-    // while(1);
-    int a = 0;
-    while (a < 100000000)
-    {
-        a++;
-    }
+    
     printf("%d \n", ans);
     
 }
