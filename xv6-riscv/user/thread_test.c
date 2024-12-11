@@ -6,9 +6,15 @@ int ans =0;
 
 void* test_func(void *arg){
     printf("Thread Test\n");
-    for(int i= 0; i< 1e4; i++){
+    for(int i= 0; i< 1e6; i++){
         ans++;
     }
+    return 0;
+}
+
+void* func2(void* arg){
+    int* val= arg;
+    printf("KOMAK! %d\n", *val);
     return 0;
 }
 
@@ -18,6 +24,7 @@ int main(int argc, char *argv){
     
     uint thread_id;
     void *stack = malloc(820);
+    int arg= 23;
 
     uint thread_id_1;
     void *stack_1 = malloc(820);
@@ -31,7 +38,7 @@ int main(int argc, char *argv){
     // uint thread_id_4;
     // void *stack_4 = malloc(820);
 
-    create_thread(&thread_id, test_func, 0, stack, 820);
+    create_thread(&thread_id, func2, (void* )&arg, stack, 820);
     create_thread(&thread_id_1, test_func, 0, stack_1, 820);
     create_thread(&thread_id_2, test_func, 0, stack_2, 820);
     create_thread(&thread_id_3, test_func, 0, stack_3, 820);
