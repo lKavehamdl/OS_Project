@@ -81,6 +81,26 @@ struct trapframe {
 
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
+struct cpu_usage{
+  uint sumOfTicks;
+  uint startTick;
+  uint quota;
+};
+
+struct proc_info{
+  char name[16];
+  int pid;
+  int ppid;
+  enum procstate state;
+  struct cpu_usage usage;
+};
+
+struct top{
+  int count;
+  struct proc_info procs[NPROC];
+};
+
+
 
 //thread added
 #define MAX_THREAD 4
