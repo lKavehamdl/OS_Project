@@ -28,6 +28,7 @@ int main(int argc, char *argv){
 
     uint thread_id_1;
     void *stack_1 = malloc(820);
+    int arg2= 45;
 
     uint thread_id_2;
     void *stack_2 = malloc(820);
@@ -39,7 +40,7 @@ int main(int argc, char *argv){
     // void *stack_4 = malloc(820);
 
     create_thread(&thread_id, func2, (void* )&arg, stack, 820);
-    create_thread(&thread_id_1, test_func, 0, stack_1, 820);
+    create_thread(&thread_id_1, func2, (void*)&arg2, stack_1, 820);
     create_thread(&thread_id_2, test_func, 0, stack_2, 820);
     create_thread(&thread_id_3, test_func, 0, stack_3, 820);
     //create_thread(&thread_id_4, test_func, 0, stack_4, 820);
