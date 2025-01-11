@@ -2,6 +2,29 @@
 #include "kernel/rt.h"
 
 struct stat;
+enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
+
+
+struct cpu_usage{
+  uint sumOfTicks;
+  uint startTick;
+  uint quota;
+};
+
+
+struct proc_usage_info{
+  char name[16];
+  int pid;
+  int ppid;
+  enum procstate state;
+  struct cpu_usage usage;
+};
+
+struct top{
+  int count;
+  struct proc_usage_info procs[NPROC];
+};
+
 
 // system calls
 int fork(void);

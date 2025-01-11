@@ -33,7 +33,6 @@ main(void){
         temp = cpu_usage();
         printf("Child %d\n",temp);
         exit(0);
-       
     }
     else{
         wait(0);

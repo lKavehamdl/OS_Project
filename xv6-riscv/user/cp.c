@@ -14,16 +14,10 @@ char* arr[] = {"UNUSED", "USED", "SLEEPING", "RUNNABLE", "RUNNING", "ZOMBIE"};
 
 int
 main(void){
-    for(int i= 0; i< 14; i++){
+    for(int i= 0; i< 15; i++){
         int pid = fork();
         if(pid == 0){
-            // sleep(2);
-            int sum = 0;
-            for (int i = 0; i < 1e4; i++)
-            {
-                sum+= sum;
-            }
-            
+            sleep(600);
         }
     }
     struct child_processes cps;

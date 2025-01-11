@@ -8,7 +8,6 @@
 #include "rt.h"
 #include "user/cp.h"
 #include <stddef.h>
-#include "user/top.h"
 
 struct cpu cpus[NCPU];
 
@@ -367,6 +366,7 @@ exit(int status)
       struct file *f = p->ofile[fd];
       fileclose(f);
       p->ofile[fd] = 0;
+      p->usage.sumOfTicks = 0;
     }
   }
 
@@ -923,38 +923,7 @@ int cpu_usage(){
   return myproc()->usage.sumOfTicks;
 }
 
-uint64 sys_top(void){
-
-  struct top* topstruct;
-  struct top tmp;
-  argaddr(0, (uint64*)&topstruct);
-
-  struct proc* p;
-  topstruct->count = 0;
-
-  
-  
-  for (p = proc; p < &proc[NPROC] ; p++)
-  {
-  if(p->state != UNUSED){
-      tmp.count++;
-      strncpy(tmp.procs->name, p->name, sizeof(proc->name));
-      tmp.procs->pid = p->pid;
-      tmp.procs->ppid = p->parent->pid;
-      tmp.procs->procstate = p->state;
-      tmp.procs->usage.sumOfTicks = p->usage.sumOfTicks;
-    }
-  }
-  
-  sort(tmp);
-
-  copyout(p->pagetable, (uint64)topstruct, (char*)&tmp, sizeof(tmp));
-
-
-  return 0;
-}
-
-void sort(struct top topstruct){
+void mySort(struct top topstruct){
   struct proc_usage_info temp;
   for (int i = 0; i < topstruct.count-1; i++)
   {
@@ -971,3 +940,41 @@ void sort(struct top topstruct){
   }
   
 }
+
+uint64 sys_top(void){
+
+  struct top* topstruct;
+  struct top tmp;
+  printf("HERE\n");
+  argaddr(0, (uint64*)&topstruct);
+
+  struct proc* p;
+  // topstruct->count = 0;
+
+  
+  
+  printf("ARE WE HERE?\n");
+  for (p = proc; p < &proc[NPROC] ; p++)
+  {
+  if(p->state != UNUSED){
+      printf("HERE2\n");
+      tmp.count++;
+      strncpy(tmp.procs->name, p->name, sizeof(proc->name));
+      tmp.procs->pid = p->pid;
+      if(p->parent)
+        tmp.procs->ppid = p->parent->pid;
+      else
+        tmp.procs->ppid = -1;
+      tmp.procs->state = p->state;
+      tmp.procs->usage.sumOfTicks = p->usage.sumOfTicks;
+    }
+  }
+  
+  mySort(tmp);
+
+  copyout(myproc()->pagetable, (uint64)topstruct, (char*)&tmp, sizeof(tmp));
+
+
+  return 0;
+}
+
