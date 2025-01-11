@@ -87,7 +87,7 @@ struct cpu_usage{
   uint quota;
 };
 
-struct proc_info{
+struct proc_usage_info{
   char name[16];
   int pid;
   int ppid;
@@ -97,7 +97,7 @@ struct proc_info{
 
 struct top{
   int count;
-  struct proc_info procs[NPROC];
+  struct proc_usage_info procs[NPROC];
 };
 
 
