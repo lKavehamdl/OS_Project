@@ -87,18 +87,18 @@ struct cpu_usage{
   uint quota;
 };
 
-struct proc_usage_info{
-  char name[16];
-  int pid;
-  int ppid;
-  enum procstate state;
-  struct cpu_usage usage;
-};
+// struct proc_usage_info{
+//   char name[16];
+//   int pid;
+//   int ppid;
+//   enum procstate state;
+//   struct cpu_usage usage;
+// };
 
-struct top{
-  int count;
-  struct proc_usage_info procs[NPROC];
-};
+// struct top{
+//   int count;
+//   struct proc_usage_info procs[NPROC];
+// };
 
 
 

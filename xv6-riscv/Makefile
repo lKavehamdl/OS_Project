@@ -145,6 +145,7 @@ UPROGS=\
 	$U/_list\
 	$U/_thread_test\
 	$U/_cpu_usage\
+	$U/_top\
 	# $U/_join_thread\
 	# $U/_stop_thread\
 	

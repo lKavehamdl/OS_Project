@@ -36,6 +36,7 @@ int create_thread(uint *, void *(*)(void *arg), void *, void *, uint64);
 uint64 stop_thread(uint64 );
 uint64 join_thread(uint64);
 uint64 cpu_usage(void);
+uint64 top(struct top*);
 
 // ulib.c
 int stat(const char*, struct stat*);

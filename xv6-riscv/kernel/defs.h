@@ -121,6 +121,8 @@ int             create_thread(uint*, void *(*)(void *), void*, void*, uint64);
 uint64          stop_thread(uint64); 
 uint64          join_thread(uint64);
 int             cpu_usage(void);
+uint64          top(void);
+
 
 
 // swtch.S

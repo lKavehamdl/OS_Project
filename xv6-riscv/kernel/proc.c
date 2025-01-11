@@ -8,6 +8,7 @@
 #include "rt.h"
 #include "user/cp.h"
 #include <stddef.h>
+#include "user/top.h"
 
 struct cpu cpus[NCPU];
 
@@ -920,4 +921,54 @@ stop_thread(uint64 thread_id){
 int cpu_usage(){
 
   return myproc()->usage.sumOfTicks;
+}
+
+//!
+uint64 sys_top(void){
+
+  struct top* topstruct;
+  argaddr(0, (uint64*)&topstruct);
+
+  struct proc* p;
+  topstruct->count = 0;
+
+  
+  
+  for (p = proc; p < &proc[NPROC] ; p++)
+  {
+  if(p->state != UNUSED){
+      topstruct->count++;
+      strncpy(topstruct->procs->name, p->name, sizeof(proc->name));
+      topstruct->procs->pid = p->pid;
+      topstruct->procs->ppid = p->parent->pid;
+      topstruct->procs->procstate = p->state;
+      topstruct->procs->usage.sumOfTicks = p->usage.sumOfTicks;
+    }
+  }
+  
+  sort(topstruct);
+
+  copyout(p->pagetable, (uint64)topstruct,,);
+
+
+  return 0;
+}
+
+//!
+void sort(struct top* topstruct){
+  struct top* temp;
+  for (int i = 0; i < topstruct->count; i++)
+  {
+    for (int j = i; j < topstruct->count - 1; j++)
+    {
+      if(topstruct->procs[j].usage.sumOfTicks > topstruct->procs[j+1].usage.sumOfTicks){
+        temp = &topstruct[j];
+        topstruct[j] = topstruct[j+1];
+        topstruct[j + 1] = *temp;
+
+      }
+    }
+    
+  }
+  
 }
