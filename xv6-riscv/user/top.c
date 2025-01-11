@@ -19,29 +19,35 @@ int
 main(void){
    int pid=fork();
    if(pid == 0){
-      int pid2= fork();
-      if(pid2 == 0){
-         for(int i= 0; i< 1e8; i++){
-            var++;
-            var2++;
-            var3++;
-         }
+      for(int i= 0; i< 1e8; i++){
+         var++;
+         var2++;
+         var3++;
       }
-      else{
-         for(int i= 0; i< 1e7; i++){
-            var++;
-            var2++;
-         }
-      }
+      // sleep(60000);
    }
    else{
-      for(int i= 0; i< 1e7; i++){
-         var ++;
-      }
+      // for(int i= 0; i< 1e6; i++){
+      //    var2++;
+      //    var3++;
+      // }
+      sleep(5000);
    }
    struct top topstruct;  
    top(&topstruct);
-   for(int i= topstruct.count -1; i>= 0; i--){
-      printf("PID: %d PPID: %d STATE: %s NAME: %s START: %d USAGE: %d\n",topstruct.procs[i].pid, topstruct.procs[i].ppid, arr[topstruct.procs[i].state], topstruct.procs[i].name, topstruct.procs[i].usage.startTick, topstruct.procs[i].usage.sumOfTicks);
+   int maxUsage = -1;
+   int index = 0;
+   for(int j= 0; j< topstruct.count; j++){
+      for(int i= 0; i< topstruct.count; i++){
+         if(topstruct.procs[i].usage.sumOfTicks > maxUsage){
+            maxUsage = topstruct.procs[i].usage.sumOfTicks;
+            index = i;
+         }
+      }
+      printf("PID: %d PPID: %d STATE: %d NAME: %s START: %d USAGE: %d\n", topstruct.procs[index].pid, topstruct.procs[index].ppid, topstruct.procs[index].state, topstruct.procs[index].name, topstruct.procs[index].usage.startTick, topstruct.procs[index].usage.sumOfTicks);
+      topstruct.procs[index].usage.sumOfTicks = -1;
+      index = 0;
+      maxUsage = -1;
    }
+   
 }

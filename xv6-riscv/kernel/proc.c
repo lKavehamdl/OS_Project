@@ -518,9 +518,9 @@ scheduler(void)
       *(p->trapframe)= tmp;
       if(!flag && !p->join){
         uint64 start = ticks;
-        if(p->usage.sumOfTicks == 0){
+        if(p->usage.startTick == 0){
           p->usage.startTick = start;
-          //printf("start %d process %d \n",p->usage.startTick,p->pid);
+          // printf("start %d process %d \n",p->usage.startTick,p->pid);
         }
         swtch(&c->context, &p->context);
         uint64 finish = ticks;
@@ -919,61 +919,36 @@ stop_thread(uint64 thread_id){
 }
 
 int cpu_usage(){
-
   return myproc()->usage.sumOfTicks;
-}
-
-void mySort(struct top topstruct){
-  struct proc_usage_info temp;
-  for (int i = 0; i < topstruct.count-1; i++)
-  {
-    for (int j = i; j < topstruct.count - 1; j++)
-    {
-      if(topstruct.procs[j].usage.sumOfTicks > topstruct.procs[j+1].usage.sumOfTicks){
-        temp = topstruct.procs[j];
-        topstruct.procs[j] = topstruct.procs[j+1];
-        topstruct.procs[j + 1] = temp;
-
-      }
-    }
-    
-  }
-  
 }
 
 uint64 sys_top(void){
 
   struct top* topstruct;
   struct top tmp;
-  printf("HERE\n");
   argaddr(0, (uint64*)&topstruct);
 
   struct proc* p;
-  // topstruct->count = 0;
-
-  
-  
-  printf("ARE WE HERE?\n");
-  for (p = proc; p < &proc[NPROC] ; p++)
+  tmp.count = 0;
+  int counter =0;
+  for (p = proc; p < &proc[NPROC]; p++)
   {
   if(p->state != UNUSED){
-      printf("HERE2\n");
       tmp.count++;
       strncpy(tmp.procs->name, p->name, sizeof(proc->name));
-      tmp.procs->pid = p->pid;
+      tmp.procs[counter].pid = p->pid;
       if(p->parent)
-        tmp.procs->ppid = p->parent->pid;
+        tmp.procs[counter].ppid = p->parent->pid;
       else
-        tmp.procs->ppid = -1;
-      tmp.procs->state = p->state;
-      tmp.procs->usage.sumOfTicks = p->usage.sumOfTicks;
+        tmp.procs[counter].ppid = -1;
+      tmp.procs[counter].state = p->state;
+      tmp.procs[counter].usage.sumOfTicks = p->usage.sumOfTicks;
+      tmp.procs[counter].usage.startTick = p->usage.startTick;
+      counter ++;
     }
-  }
-  
-  mySort(tmp);
+  }  
 
   copyout(myproc()->pagetable, (uint64)topstruct, (char*)&tmp, sizeof(tmp));
-
 
   return 0;
 }

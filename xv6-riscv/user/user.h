@@ -6,7 +6,7 @@ enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 
 struct cpu_usage{
-  uint sumOfTicks;
+  int sumOfTicks;
   uint startTick;
   uint quota;
 };
