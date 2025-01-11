@@ -470,52 +470,80 @@ scheduler(void)
     intr_on();
 
     int found = 0;
-    for(p = proc; p < &proc[NPROC]; p++) {
-      acquire(&p->lock);
-      if(p->state == RUNNABLE) {
-        // Switch to chosen process.  It is the process's job
-        // to release its lock and then reacquire it
-        // before jumping back to us.
-        p->state = RUNNING;
-        c->proc = p;
-        int flag= 0;
-        struct trapframe tmp= *(p->trapframe); 
-        for(struct thread* x=p->threads; x < &p->threads[MAX_THREAD]; x++){
-          if(x->state == THREAD_RUNNABLE){
-            *(p->trapframe) = *(x->trapframe);
-            x->state= THREAD_RUNNING;
-            p->current_thread= x;
-            swtch(&c->context, &p->context);
-            flag= 1;
-            if(p->current_thread->state == THREAD_FREE){
-              break;
-            }
-            if(p->current_thread->state == THREAD_RUNNING){
-              p->current_thread->state= THREAD_RUNNABLE;
-            }
-            if(p->thread_count > 1)
-              p->state= RUNNABLE;
-          }
-          else
-            continue;
-        }
-        *(p->trapframe)= tmp;
-        if(!flag && !p->join)
-          swtch(&c->context, &p->context);
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
-        flag= 0;
-        found = 1;
+    unsigned long min_usage = 1UL<<32;
+    int temp_index = 0;
+    int counter = 0;
+    for (p = proc; p < &proc[NPROC]; p++)
+    {
+      if(p->usage.sumOfTicks < min_usage && p->state == RUNNABLE){
+        temp_index = counter;
+        min_usage = p->usage.sumOfTicks;
       }
-      release(&p->lock);
+      counter++;
     }
-    if(found == 0) {
-      // nothing to run; stop running on this core until an interrupt.
-      intr_on();
-      asm volatile("wfi");
+
+    p = &proc[temp_index];
+    p->join = 0;
+    
+    //for(p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);
+    if(p->state == RUNNABLE) {
+      // Switch to chosen process.  It is the process's job
+      // to release its lock and then reacquire it
+      // before jumping back to us.
+      p->state = RUNNING;
+      c->proc = p;
+      int flag= 0;
+      struct trapframe tmp= *(p->trapframe); 
+      for(struct thread* x=p->threads; x < &p->threads[MAX_THREAD]; x++){
+        if(x->state == THREAD_RUNNABLE){
+          *(p->trapframe) = *(x->trapframe);
+          x->state= THREAD_RUNNING;
+          p->current_thread= x;
+          swtch(&c->context, &p->context);
+          flag= 1;
+          if(p->current_thread->state == THREAD_FREE){
+            break;
+          }
+          if(p->current_thread->state == THREAD_RUNNING){
+            p->current_thread->state= THREAD_RUNNABLE;
+          }
+          if(p->thread_count > 1)
+            p->state= RUNNABLE;
+        }
+        else
+          continue;
+      }
+      *(p->trapframe)= tmp;
+      if(!flag && !p->join){
+        uint64 start = ticks;
+        if(p->usage.sumOfTicks == 0){
+          p->usage.startTick = start;
+          //printf("start %d process %d \n",p->usage.startTick,p->pid);
+        }
+        swtch(&c->context, &p->context);
+        uint64 finish = ticks;
+
+        long long delta = finish - start;
+
+        p->usage.sumOfTicks += delta;
+        //printf("PID:%d , Sum:%d\n",p->pid,p->usage.sumOfTicks);
+
+      }
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      c->proc = 0;
+      flag= 0;
+      found = 1;
     }
+    release(&p->lock);
+    //}
+  if(found == 0) {
+    // nothing to run; stop running on this core until an interrupt.
+    intr_on();
+    asm volatile("wfi");
   }
+}
 }
 
 // Switch to scheduler.  Must hold only p->lock
@@ -887,4 +915,9 @@ stop_thread(uint64 thread_id){
 
   yield();
   return -1;
+}
+
+int cpu_usage(){
+
+  return myproc()->usage.sumOfTicks;
 }

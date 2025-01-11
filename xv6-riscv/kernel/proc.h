@@ -149,5 +149,5 @@ struct proc {
   struct thread threads[MAX_THREAD];
   struct thread *current_thread;
   int thread_count;
-  
+  struct cpu_usage usage;
 };

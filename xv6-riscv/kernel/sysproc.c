@@ -123,3 +123,8 @@ sys_join_thread(){
   argaddr(0, &thread_id);
   return join_thread(thread_id);
 }
+
+uint64
+sys_cpu_usage(){
+  return cpu_usage();
+}
