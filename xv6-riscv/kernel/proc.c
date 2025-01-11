@@ -923,10 +923,10 @@ int cpu_usage(){
   return myproc()->usage.sumOfTicks;
 }
 
-//!
 uint64 sys_top(void){
 
   struct top* topstruct;
+  struct top tmp;
   argaddr(0, (uint64*)&topstruct);
 
   struct proc* p;
@@ -937,34 +937,33 @@ uint64 sys_top(void){
   for (p = proc; p < &proc[NPROC] ; p++)
   {
   if(p->state != UNUSED){
-      topstruct->count++;
-      strncpy(topstruct->procs->name, p->name, sizeof(proc->name));
-      topstruct->procs->pid = p->pid;
-      topstruct->procs->ppid = p->parent->pid;
-      topstruct->procs->procstate = p->state;
-      topstruct->procs->usage.sumOfTicks = p->usage.sumOfTicks;
+      tmp.count++;
+      strncpy(tmp.procs->name, p->name, sizeof(proc->name));
+      tmp.procs->pid = p->pid;
+      tmp.procs->ppid = p->parent->pid;
+      tmp.procs->procstate = p->state;
+      tmp.procs->usage.sumOfTicks = p->usage.sumOfTicks;
     }
   }
   
-  sort(topstruct);
+  sort(tmp);
 
-  copyout(p->pagetable, (uint64)topstruct,,);
+  copyout(p->pagetable, (uint64)topstruct, (char*)&tmp, sizeof(tmp));
 
 
   return 0;
 }
 
-//!
-void sort(struct top* topstruct){
-  struct top* temp;
-  for (int i = 0; i < topstruct->count; i++)
+void sort(struct top topstruct){
+  struct proc_usage_info temp;
+  for (int i = 0; i < topstruct.count-1; i++)
   {
-    for (int j = i; j < topstruct->count - 1; j++)
+    for (int j = i; j < topstruct.count - 1; j++)
     {
-      if(topstruct->procs[j].usage.sumOfTicks > topstruct->procs[j+1].usage.sumOfTicks){
-        temp = &topstruct[j];
-        topstruct[j] = topstruct[j+1];
-        topstruct[j + 1] = *temp;
+      if(topstruct.procs[j].usage.sumOfTicks > topstruct.procs[j+1].usage.sumOfTicks){
+        temp = topstruct.procs[j];
+        topstruct.procs[j] = topstruct.procs[j+1];
+        topstruct.procs[j + 1] = temp;
 
       }
     }
