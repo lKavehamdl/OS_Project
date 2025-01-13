@@ -953,10 +953,35 @@ uint64 sys_top(void){
   return 0;
 }
 
+int sol2(struct proc* par, struct proc* child){
+  if(par == child)
+    return 0;
+  
+  struct proc* p = child;
+  while(p->parent != 0){
+    if(p->parent == par){
+      return 0;
+    }
+    p= p->parent; 
+  }
+  return -1;
+}
+
 int
 set_cpu_quota(uint64 pid, uint64 quota){
   //TODO : implement this function
-  printf("KOMAK! %ld %ld\n", pid, quota);
-  return 0;
+  struct proc* p;
+  for(p= proc; p < &proc[NPROC]; p++){
+    acquire(&p->lock);
+    if(p->pid == pid){
+      if(!sol2(myproc(), p)){
+        p->usage.quota = quota;
+        release(&p->lock);
+        return 0;
+      }
+    }
+    release(&p->lock);
+  }
+ return -1;
 }
 
