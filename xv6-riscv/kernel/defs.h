@@ -122,6 +122,8 @@ uint64          stop_thread(uint64);
 uint64          join_thread(uint64);
 int             cpu_usage(void);
 uint64          top(void);
+uint64          sys_set_cpu_quota(void);
+int             set_cpu_quota(uint64 , uint64);
 
 
 

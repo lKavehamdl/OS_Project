@@ -128,3 +128,12 @@ uint64
 sys_cpu_usage(){
   return cpu_usage();
 }
+
+uint64
+sys_set_cpu_quota(){
+  uint64 pid;
+  uint64 quota;
+  argaddr(0, &pid);
+  argaddr(1, &quota);
+  return set_cpu_quota(pid, quota);
+}

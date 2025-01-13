@@ -60,6 +60,7 @@ uint64 stop_thread(uint64 );
 uint64 join_thread(uint64);
 uint64 cpu_usage(void);
 uint64 top(struct top*);
+uint64 set_cpu_quota(int pid, int quota);
 
 // ulib.c
 int stat(const char*, struct stat*);

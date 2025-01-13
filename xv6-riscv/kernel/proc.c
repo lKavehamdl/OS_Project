@@ -953,3 +953,10 @@ uint64 sys_top(void){
   return 0;
 }
 
+int
+set_cpu_quota(uint64 pid, uint64 quota){
+  //TODO : implement this function
+  printf("KOMAK! %ld %ld\n", pid, quota);
+  return 0;
+}
+
