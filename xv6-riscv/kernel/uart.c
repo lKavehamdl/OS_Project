@@ -186,6 +186,7 @@ uartintr(void)
 
   // send buffered characters.
   acquire(&uart_tx_lock);
+  // printf("|");
   uartstart();
   release(&uart_tx_lock);
 }

@@ -139,16 +139,15 @@ UPROGS=\
 	$U/_grind\
 	$U/_wc\
 	$U/_zombie\
-	$U/_KOMAK!\
-	$U/_cp\
-	$U/_rt\
-	$U/_list\
+	$U/_child_test\
+	$U/_trap_test\
 	$U/_thread_test\
 	$U/_cpu_usage\
+	$U/_quota\
+	$U/_deadline\
 	$U/_top\
-	# $U/_join_thread\
-	# $U/_stop_thread\
-	
+
+
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)

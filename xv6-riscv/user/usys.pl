@@ -14,7 +14,7 @@ sub entry {
     print " ecall\n";
     print " ret\n";
 }
-
+	
 entry("fork");
 entry("exit");
 entry("wait");
@@ -36,15 +36,13 @@ entry("getpid");
 entry("sbrk");
 entry("sleep");
 entry("uptime");
-entry("komak");
-entry("cp");
-entry("rt");
-entry("roffset");
-entry("ramload");
-entry("list");
-##
+entry("childproc");
+entry("rptraps");
 entry("create_thread");
-entry("join_thread");
 entry("stop_thread");
+entry("join_thread");
+#
 entry("cpu_usage");
 entry("top");
+entry("set_cpu_quota");
+entry("fork_deadline")

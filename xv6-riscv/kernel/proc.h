@@ -1,3 +1,5 @@
+#define MAX_THREAD 4
+#define STACK_SIZE 1024
 // Saved registers for kernel context switches.
 struct context {
   uint64 ra;
@@ -27,6 +29,14 @@ struct cpu {
 };
 
 extern struct cpu cpus[NCPU];
+
+struct cpu_usage {
+  uint sum_of_ticks;
+  uint start_tick;
+  uint quota;
+  uint has_deadline;
+  uint deadline;
+};
 
 // per-process data for the trap handling code in trampoline.S.
 // sits in a page by itself just under the trampoline page in the
@@ -79,15 +89,20 @@ struct trapframe {
   /* 280 */ uint64 t6;
 };
 
+
+
+enum threadstate { THREAD_FREE, THREAD_RUNNABLE, THREAD_RUNNING, THREAD_JOINED};
+
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
-struct cpu_usage{
-  uint sumOfTicks;
-  uint startTick;
-  uint quota;
+struct thread {
+  enum threadstate state;
+  struct trapframe *trapframe;
+  uint id;
+  uint join;
 };
 
-struct proc_usage_info{
+struct proc_info {
   char name[16];
   int pid;
   int ppid;
@@ -95,28 +110,9 @@ struct proc_usage_info{
   struct cpu_usage usage;
 };
 
-struct top{
+struct top {
   int count;
-  struct proc_usage_info procs[NPROC];
-};
-
-
-
-//thread added
-#define MAX_THREAD 4
-
-enum threadstate {
-  THREAD_FREE,
-  THREAD_RUNNABLE,
-  THREAD_RUNNING,
-  THREAD_JOINED
-};
-
-struct thread {
-  enum threadstate state;
-  struct trapframe *trapframe;
-  struct context *context;
-  uint id;
+  struct proc_info processes[NPROC];
 };
 
 // Per-process state
@@ -129,13 +125,14 @@ struct proc {
   int killed;                  // If non-zero, have been killed
   int xstate;                  // Exit status to be returned to parent's wait
   int pid;                     // Process ID
-  uint join;                   // For processes we count as main threads
 
-
+  struct cpu_usage usage;
   // wait_lock must be held when using this:
   struct proc *parent;         // Parent process
 
   // these are private to the process, so p->lock need not be held.
+  struct thread threads[MAX_THREAD];
+  struct thread *current_thread;
   uint64 kstack;               // Virtual address of kernel stack
   uint64 sz;                   // Size of process memory (bytes)
   pagetable_t pagetable;       // User page table
@@ -144,10 +141,4 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
-
-  // threads
-  struct thread threads[MAX_THREAD];
-  struct thread *current_thread;
-  int thread_count;
-  struct cpu_usage usage;
 };

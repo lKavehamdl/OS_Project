@@ -80,18 +80,6 @@ sys_read(void)
 }
 
 uint64
-kfread(int fd, uint64 p, int n)
-{
-  struct file *f;
-  
-  if(fd < 0 || fd >= NOFILE || (f=myproc()->ofile[fd]) == 0)
-    return -1;
-
-  return kfileread(f, p, n); 
-}
-
-
-uint64
 sys_write(void)
 {
   struct file *f;
@@ -107,18 +95,6 @@ sys_write(void)
 }
 
 uint64
-kfwrite(int fd, uint64 p, int n)
-{
-  struct file *f;
-  
-  if(fd < 0 || fd >= NOFILE || (f=myproc()->ofile[fd]) == 0)
-    return -1;
-
-  return kfilewrite(f, p, n); 
-}
-
-
-uint64
 sys_close(void)
 {
   int fd;
@@ -128,19 +104,6 @@ sys_close(void)
     return -1;
   myproc()->ofile[fd] = 0;
   fileclose(f);
-  return 0;
-}
-
-uint64
-kfclose(int fd)
-{
-  struct file *f;
- 
-  if(fd < 0 || fd >= NOFILE || (f=myproc()->ofile[fd]) == 0)
-    return -1;
-
-  myproc()->ofile[fd] = 0;
-  fileclose(f); 
   return 0;
 }
 
@@ -408,70 +371,6 @@ sys_open(void)
 }
 
 uint64
-kfopen(char* path, int omode)
-{
-  int fd;
-  struct file *f;
-  struct inode *ip;
-
-  begin_op();
-
-  if(omode & O_CREATE){
-    ip = create(path, T_FILE, 0, 0);
-    if(ip == 0){
-      end_op();
-      return -1;
-    }
-  } else {
-    if((ip = namei(path)) == 0){
-      end_op();
-      return -1;
-    }
-    ilock(ip);
-    if(ip->type == T_DIR && omode != O_RDONLY){
-      iunlockput(ip);
-      end_op();
-      return -1;
-    }
-  }
-
-  if(ip->type == T_DEVICE && (ip->major < 0 || ip->major >= NDEV)){
-    iunlockput(ip);
-    end_op();
-    return -1;
-  }
-
-  if((f = filealloc()) == 0 || (fd = fdalloc(f)) < 0){
-    if(f)
-      fileclose(f);
-    iunlockput(ip);
-    end_op();
-    return -1;
-  }
-
-  if(ip->type == T_DEVICE){
-    f->type = FD_DEVICE;
-    f->major = ip->major;
-  } else {
-    f->type = FD_INODE;
-    f->off = 0;
-  }
-  f->ip = ip;
-  f->readable = !(omode & O_WRONLY);
-  f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
-
-  if((omode & O_TRUNC) && ip->type == T_FILE){
-    itrunc(ip);
-  }
-
-  iunlock(ip);
-  end_op();
-
-  return fd;
-}
-
-
-uint64
 sys_mkdir(void)
 {
   char path[MAXPATH];
@@ -604,27 +503,3 @@ sys_pipe(void)
   }
   return 0;
 }
-
-uint64
-zero_offset(int fd){
-  struct file* f;
-  if(fd < 0 || fd >= NOFILE || (f=myproc()->ofile[fd]) == 0)
-    return -1;
-
-  f->off = 0;
-  return 0;
-}
-
-uint64
-end_offset(int fd, int KOMAK){
-  struct file* f;
-  if(fd < 0 || fd >= NOFILE || (f=myproc()->ofile[fd]) == 0)
-    return -1;
-
-  if(f->ip->size <  KOMAK){
-    f->off = 0;
-    return 0;
-  }
-  f->off = f->ip->size - KOMAK;
-  return 0;  
-} 

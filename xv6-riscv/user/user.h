@@ -1,18 +1,18 @@
-#include "cp.h"
-#include "kernel/rt.h"
-
+#include "kernel/child.h"
+#include "kernel/report.h"
 struct stat;
+
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
-
-struct cpu_usage{
-  int sumOfTicks;
-  uint startTick;
+struct cpu_usage {
+  uint sum_of_ticks;
+  uint start_tick;
   uint quota;
+  int has_deadline;
+  uint deadline;
 };
 
-
-struct proc_usage_info{
+struct proc_info {
   char name[16];
   int pid;
   int ppid;
@@ -20,9 +20,9 @@ struct proc_usage_info{
   struct cpu_usage usage;
 };
 
-struct top{
+struct top {
   int count;
-  struct proc_usage_info procs[NPROC];
+  struct proc_info processes[NPROC];
 };
 
 
@@ -48,18 +48,18 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
-int komak(void);
-int cp(struct child_processes*);
-int rt(struct report_traps*);
-int roffset(int fd, int KOMAK);
-int ramload(void);
-int list(void);
+int childproc(struct child_processes*);
+int rptraps(struct report_traps*);
+int create_thread(void*, void*, void*);
+int stop_thread(int tid);
+int join_thread(int tid);
+
 //
-int create_thread(uint *, void *(*)(void *arg), void *, void *, uint64);
-uint64 stop_thread(uint64 );
-uint64 join_thread(uint64);
-uint64 cpu_usage(void);
-uint64 top(struct top*);
+int cpu_usage(void);
+int top(struct top*);
+int set_cpu_quota(int pid, int quota);
+int fork_deadline(int deadline);
+
 
 // ulib.c
 int stat(const char*, struct stat*);

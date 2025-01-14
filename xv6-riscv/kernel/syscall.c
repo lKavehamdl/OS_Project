@@ -101,18 +101,15 @@ extern uint64 sys_unlink(void);
 extern uint64 sys_link(void);
 extern uint64 sys_mkdir(void);
 extern uint64 sys_close(void);
-extern uint64 sys_komak(void);
-extern uint64 sys_cp(void);
-extern uint64 sys_rt(void);
-extern uint64 sys_roffset(void);
-extern uint64 sys_ramload(void);
-extern uint64 sys_list(void);
-//
+extern uint64 sys_childproc(void);
+extern uint64 sys_rptraps(void);
 extern uint64 sys_create_thread(void);
-extern uint64 sys_join_thread(void);
 extern uint64 sys_stop_thread(void);
+extern uint64 sys_join_thread(void);
 extern uint64 sys_cpu_usage(void);
 extern uint64 sys_top(void);
+extern uint64 sys_set_cpu_quota(void);
+extern uint64 sys_fork_deadline(void);
 
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
@@ -138,17 +135,15 @@ static uint64 (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
-[SYS_komak]   sys_komak, 
-[SYS_cp]      sys_cp,
-[SYS_rt]      sys_rt,
-[SYS_roffset] sys_roffset,
-[SYS_ramload] sys_ramload,
-[SYS_list]    sys_list,
+[SYS_childproc] sys_childproc,
+[SYS_rptraps] sys_rptraps,
 [SYS_create_thread] sys_create_thread,
-[SYS_join_thread] sys_join_thread,
 [SYS_stop_thread] sys_stop_thread,
-[SYS_cpu_usage]   sys_cpu_usage,
-[SYS_top]         sys_top,
+[SYS_join_thread] sys_join_thread,
+[SYS_cpu_usage] sys_cpu_usage,
+[SYS_top] sys_top,
+[SYS_set_cpu_quota] sys_set_cpu_quota,
+[SYS_fork_deadline] sys_fork_deadline,
 };
 
 void
@@ -161,10 +156,11 @@ syscall(void)
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     // Use num to lookup the system call function for num, call it,
     // and store its return value in p->trapframe->a0
-    if(num == SYS_stop_thread || num == SYS_write || num == SYS_create_thread)
+    if (num == SYS_join_thread || num == SYS_write || num == SYS_stop_thread) { // to avoid ruining next thread trapframe (pure stupidity)
       syscalls[num]();
-    else
-      p->trapframe->a0 = syscalls[num]();
+    } else {
+      p->trapframe->a0  = syscalls[num]();
+    }
   } else {
     printf("%d %s: unknown sys call %d\n",
             p->pid, p->name, num);

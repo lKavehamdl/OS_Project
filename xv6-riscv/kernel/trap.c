@@ -5,12 +5,8 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
-#include "rt.h"
-#include "fcntl.h"
 
 struct spinlock tickslock;
-struct report_traps rts;
-int idx= 0;
 uint ticks;
 
 extern char trampoline[], uservec[], userret[];
@@ -53,13 +49,7 @@ usertrap(void)
   
   // save user program counter.
   p->trapframe->epc = r_sepc();
-
-  if(p->trapframe->epc == -2 && p->trapframe->ra == -1){
-    stop_thread(p->current_thread->id);
-    usertrapret();
-    return;
-  }
-
+  
   if(r_scause() == 8){
     // system call
 
@@ -78,36 +68,32 @@ usertrap(void)
   } else if((which_dev = devintr()) != 0){
     // ok
   } else {
-    printf("usertrap(): unexpected scause 0x%lx pid=%d\n", r_scause(), p->pid);
-    printf("            sepc=0x%lx stval=0x%lx\n", r_sepc(), r_stval());
-    strncpy(rts.reports[idx].pname, p->name, 16);
-    rts.reports[idx].pid = p->pid;
-    rts.reports[idx].scause = r_scause();
-    rts.reports[idx].sepc = r_sepc();
-    rts.reports[idx].stval = r_stval();
-    rts.count++;
-    int fd;
-    if((fd = kfopen("out.txt", O_RDWR | O_CREATE)) < 0){
-      return ;
+    add_trap_report(p->pid, p->name, r_scause(), r_sepc(), r_stval());
+
+    int handled = 0;
+    if (p->current_thread != 0) {
+      if (p->trapframe->ra == -1 && p->trapframe->epc == -2) {
+        handled = 1;
+        stop_thread(p->current_thread->id);
+      }
     }
-    end_offset(fd, 0);
-    if(kfwrite(fd, (uint64)&rts.reports[idx], sizeof(rts.reports[idx])) < 0){
-      return ;
+
+    if (!handled) {
+      printf("usertrap(): unexpected scause 0x%lx pid=%d\n", r_scause(), p->pid);
+      printf("            sepc=0x%lx stval=0x%lx\n", r_sepc(), r_stval());
+      setkilled(p);
     }
-    idx++;
-    idx%= MRBS;
-    if(kfclose(fd) < 0){
-      return ;
-    }
-    setkilled(p);
   }
 
   if(killed(p))
     exit(-1);
 
   // give up the CPU if this is a timer interrupt.
-  if(which_dev == 2)
+  if(which_dev == 2) {
+    p->usage.sum_of_ticks += ticks - p->usage.start_tick;
+
     yield();
+  }
 
   usertrapret();
 }
@@ -245,28 +231,3 @@ devintr()
   }
 }
 
-
-uint64
-print_rt(void){
-  struct report_traps* user;
-
-  argaddr(0, (uint64* )&user);  
-  copyout(myproc()->pagetable, (uint64)user, (char*)&rts, sizeof(rts));
-  return 0;
-}
-
-uint64
-load(void){
-  int fd = kfopen("out.txt", O_RDWR | O_CREATE);
-  end_offset(fd, sizeof(rts.reports));
-  rts.count = 0;
-  for(int i= 0; i< 10; i++){
-    if((kfread(fd, (uint64)&rts.reports[i], 48)) == 0){
-      break;
-    }
-    rts.count%= MRBS;
-    rts.count++;
-    printf("%d- report loaded as: %d, %s, %lx, %lx, %lx\n", rts.count, rts.reports[i].pid, rts.reports[i].pname, rts.reports[i].scause, rts.reports[i].sepc, rts.reports[i].stval);
-  }
-  return 0;
-}
