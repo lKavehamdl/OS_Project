@@ -62,7 +62,8 @@ procinit(void)
       {
         p->threads[i].state = THREAD_FREE;
       }
-      p->usage.quota = DEFAULT_QUOTA;
+      p->usage.quota = 1;
+      p->usage.has_deadline = 0;
       p->kstack = KSTACK((int) (p - proc));
   }
 }
@@ -403,7 +404,7 @@ exit(int status)
   p->usage.deadline = 0;
   p->usage.start_tick = 0;
   p->usage.sum_of_ticks = 0;
-  p->usage.quota = DEFAULT_QUOTA;
+  p->usage.quota = 1;
 
   p->xstate = status;
   p->state = ZOMBIE;
@@ -467,7 +468,7 @@ wait(uint64 addr)
 void deadlines_check() {
   for(struct proc *p = proc; p < &proc[NPROC]; p++) {
     if(p->killed != 1 && p->usage.has_deadline) {
-      if (p->usage.deadline <= ticks) {
+      if (p->usage.deadline <= ticks) { // deadline is over
         if (p->state == SLEEPING)
           p->state = RUNNABLE; 
         p->killed = 1; 
@@ -476,62 +477,70 @@ void deadlines_check() {
   }
 }
 
+
 struct proc* scheduler_priority() {
   struct proc* low_priority_list[NPROC];
   int low_priority_index = 0;
 
+  struct proc* high_priority_list[NPROC];
+  int high_priority_index = 0;
+
+
   struct proc *p;
   struct proc *shortest_job = 0;
   int min = 0;
-  for(p = proc; p < &proc[NPROC]; p++) {
-    if (p->state == RUNNABLE) {
-      if (p->usage.sum_of_ticks >= p->usage.quota) {
-        low_priority_list[low_priority_index++] = p;
-        
-        continue;
-      }
 
-      if (shortest_job == 0 || p->usage.sum_of_ticks < min) {
-        shortest_job = p;
-        min = p->usage.sum_of_ticks;
-      } else if (p->usage.sum_of_ticks == min) { 
-        if (p->usage.has_deadline) {
-          if (shortest_job->usage.has_deadline) {
-            if (p->usage.deadline < shortest_job->usage.deadline) {
-              shortest_job = p;
-              min = p->usage.sum_of_ticks;
-            }
-          } else {
-            shortest_job = p;
-            min = p->usage.sum_of_ticks;
-          }
-        }
-      }
+  for(p= proc; p < &proc[NPROC]; p ++){
+    if(p->state == RUNNABLE){
+      if(p->usage.sum_of_ticks >= p->usage.quota)
+        low_priority_list[low_priority_index++] = p;
+      else
+        high_priority_list[high_priority_index++] = p;
     }
   }
 
-
-  // pick from low priority array, if no normal priority is runnable
-  if (shortest_job == 0 && low_priority_index > 0) {
-    for (int i = 0; i < low_priority_index; i++)
-    {
-      p = low_priority_list[i];
-      if (shortest_job == 0 || p->usage.sum_of_ticks < min) {
-        shortest_job = p;
-        min = p->usage.sum_of_ticks;
-      }
-      else if (p->usage.sum_of_ticks == min) {
-        if (p->usage.has_deadline) {
-          if (shortest_job->usage.has_deadline) {
-            if (p->usage.deadline < shortest_job->usage.deadline) {
+  if(high_priority_index > 0){ // we have high priority proccesses  
+    shortest_job = high_priority_list[0];
+    min = high_priority_list[0]->usage.sum_of_ticks;
+    for(int i = 0;i < high_priority_index; i++) { // finding SJ in high priority Q 
+      p = high_priority_list[i];
+        if(p->usage.sum_of_ticks < min){
+          shortest_job = p;
+          min = p->usage.sum_of_ticks;
+        }else if (p->usage.sum_of_ticks == min) { //corner case handeling 
+          if (p->usage.has_deadline) {
+            if (shortest_job->usage.has_deadline) {
+              if (p->usage.deadline < shortest_job->usage.deadline) {
+                shortest_job = p;
+                min = p->usage.sum_of_ticks;
+              }
+            } else {
+              shortest_job = p;
+              min = p->usage.sum_of_ticks;
+            }
+          }
+        }
+    }
+  }
+  else if (low_priority_index > 0) { // no high priority proccess so we must choose from low priorities
+      for (int i = 0; i < low_priority_index; i++){
+        p = low_priority_list[i];
+        if (shortest_job == 0 || p->usage.sum_of_ticks < min) {
+          shortest_job = p;
+          min = p->usage.sum_of_ticks;
+        }
+        else if (p->usage.sum_of_ticks == min) {
+          if (p->usage.has_deadline) {
+            if (shortest_job->usage.has_deadline) {
+              if (p->usage.deadline < shortest_job->usage.deadline) {
+                shortest_job = p;
+              }
+            } else {
               shortest_job = p;
             }
-          } else {
-            shortest_job = p;
           }
         }
       }
-    }
   }
 
   return shortest_job;
@@ -1047,6 +1056,20 @@ int get_cpu_usage() {
   return myproc()->usage.sum_of_ticks;
 }
 
+void bSort(struct top* top){
+for (int i = 0; i < top->count; i++)
+  {
+    for (int j = i + 1; j < top->count; j++)
+    {
+      if (top->processes[i].usage.sum_of_ticks < top->processes[j].usage.sum_of_ticks) {
+        struct proc_info temp = top->processes[i];
+        top->processes[i] = top->processes[j];
+        top->processes[j] = temp;
+      }
+    }
+  }
+}
+
 int top_processes(struct top *top) {
   struct proc *p;
   int n = 0;
@@ -1070,33 +1093,18 @@ int top_processes(struct top *top) {
 
   top->count = n;
 
-  //Sorting
-  for (int i = 0; i < n; i++)
-  {
-    for (int j = i + 1; j < n; j++)
-    {
-      if (top->processes[i].usage.sum_of_ticks < top->processes[j].usage.sum_of_ticks) {
-        struct proc_info temp = top->processes[i];
-        top->processes[i] = top->processes[j];
-        top->processes[j] = temp;
-      }
-    }
-  }
-
+  bSort(top);
 
   return 0;
 }
 
-int is_allowed(struct proc* parent, struct proc* child) {
-  if (parent == child){
+int sol(struct proc* parent, struct proc* child) {
+  if (parent == child)
     return 1;
-  }
 
   struct proc* p = child;
   while (p->parent != 0) {
-    if (p->parent == parent) {
-      return 1;
-    }
+    if (p->parent == parent) return 1;
     p = p->parent;
   }
   return 0;
@@ -1108,7 +1116,7 @@ int set_cpu_quota(int pid, int quota) {
 
     acquire(&p->lock);
     if(p->pid == pid) {
-      if (is_allowed(myproc(), p)) {
+      if (sol(myproc(), p)) {
         p->usage.quota = quota;
         release(&p->lock);
         return 0;
