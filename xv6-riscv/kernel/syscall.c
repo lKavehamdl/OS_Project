@@ -144,6 +144,7 @@ static uint64 (*syscalls[])(void) = {
 [SYS_top] sys_top,
 [SYS_set_cpu_quota] sys_set_cpu_quota,
 [SYS_fork_deadline] sys_fork_deadline,
+
 };
 
 void
