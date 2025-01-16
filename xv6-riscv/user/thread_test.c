@@ -2,55 +2,45 @@
 #include "kernel/stat.h"
 #include "user/user.h"
 
-int ans =0;
+int a = 0, b = 0, c = 0;
 
-void* test_func(void *arg){
-    printf("Thread Test\n");
-    for(int i= 0; i< 1e6; i++){
-        ans++;
+void *my_thread(void *arg) {
+    int *number = arg;
+    printf("entered thread\n");
+
+    for (int i = 0; i < 100; i++)
+    {
+        (*number)++;
     }
+        if (number == &a) {
+            stop_thread(-1);
+            printf("thread a: %d\n", *number);
+        } else if (number == &b) {
+            printf("thread b: %d\n", *number);
+        } else {
+            printf("thread c: %d\n", *number);
+        }
+    
     return 0;
 }
 
-void* func2(void* arg){
-    int* val= arg;
-    printf("KOMAK! %d\n", *val);
-    return 0;
-}
-
-int main(int argc, char *argv){
-
-    printf("Testing Main\n");
+int main(int argc, char const *argv[])
+{
+    void* stack = malloc(1024);
+    int ta = create_thread(my_thread, &a, stack);
+    printf("thread %d created\n", ta);
+    stack = malloc(1024);
+    int tb = create_thread(my_thread, &b, stack);
+    printf("thread %d created\n", tb);
+    stack = malloc(1024);
+    int tc = create_thread(my_thread, &c, stack);
+    printf("thread %d created\n", tc);
     
-    uint thread_id;
-    void *stack = malloc(820);
-    int arg= 23;
-
-    uint thread_id_1;
-    void *stack_1 = malloc(820);
-    int arg2= 45;
-
-    uint thread_id_2;
-    void *stack_2 = malloc(820);
-
-    uint thread_id_3;
-    void *stack_3 = malloc(820);
-
-    // uint thread_id_4;
-    // void *stack_4 = malloc(820);
-
-    create_thread(&thread_id, func2, (void* )&arg, stack, 820);
-    create_thread(&thread_id_1, func2, (void*)&arg2, stack_1, 820);
-    create_thread(&thread_id_2, test_func, 0, stack_2, 820);
-    create_thread(&thread_id_3, test_func, 0, stack_3, 820);
-    //create_thread(&thread_id_4, test_func, 0, stack_4, 820);
-
-    join_thread(thread_id);
-    join_thread(thread_id_1);
-    join_thread(thread_id_2);
-    join_thread(thread_id_3);
-
+    join_thread(ta);
+    join_thread(tb);
+    join_thread(tc);
     
-    printf("%d \n", ans);
-    
+
+    printf("All threads are finished\n");
+    exit(0);
 }

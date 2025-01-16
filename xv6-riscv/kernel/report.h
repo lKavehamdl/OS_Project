@@ -1,11 +1,6 @@
-#include "types.h"
+#define MAX_REPORT_BUFFER_SIZE 10
 
-#ifndef RT_H
-#define RT_H
-
-#define MRBS 10  
-
-struct report{
+struct report {
     char pname[16];
     int pid;
     uint64 scause;
@@ -14,9 +9,7 @@ struct report{
 };
 
 struct report_traps {
-    struct report reports[MRBS];
+    struct report reports[MAX_REPORT_BUFFER_SIZE];
     int count;
 };
 
-
-#endif

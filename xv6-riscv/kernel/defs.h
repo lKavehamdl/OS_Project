@@ -4,10 +4,16 @@ struct file;
 struct inode;
 struct pipe;
 struct proc;
+struct cpu_usage;
+struct top;
 struct spinlock;
 struct sleeplock;
 struct stat;
 struct superblock;
+struct child_info;
+struct child_processes;
+struct report_traps;
+enum procstate;
 
 // bio.c
 void            binit(void);
@@ -33,9 +39,6 @@ void            fileinit(void);
 int             fileread(struct file*, uint64, int n);
 int             filestat(struct file*, uint64 addr);
 int             filewrite(struct file*, uint64, int n);
-int             kfilewrite(struct file*, uint64, int n);
-int             kfileread(struct file*, uint64, int n);
-
 
 // fs.c
 void            fsinit(int);
@@ -78,9 +81,6 @@ int             pipealloc(struct file**, struct file**);
 void            pipeclose(struct pipe*, int);
 int             piperead(struct pipe*, uint64, int);
 int             pipewrite(struct pipe*, uint64, int);
-int             kpiperead(struct pipe*, uint64, int);
-int             kpipewrite(struct pipe*, uint64, int);
-
 
 // printf.c
 int            printf(char*, ...) __attribute__ ((format (printf, 1, 2)));
@@ -112,20 +112,19 @@ void            yield(void);
 int             either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int             either_copyin(void *dst, int user_src, uint64 src, uint64 len);
 void            procdump(void);
-int             sol(struct proc);
-uint64          sys_rt(void);
-uint64          sys_cp(void);
-uint64          sys_list(void);
-//   
-int             create_thread(uint*, void *(*)(void *), void*, void*, uint64);
-uint64          stop_thread(uint64); 
-uint64          join_thread(uint64);
-int             cpu_usage(void);
-uint64          top(void);
-uint64          sys_set_cpu_quota(void);
-int             set_cpu_quota(uint64 , uint64);
+int             child_processes(struct child_processes*);
+int             report_traps(struct report_traps*);
+void            add_trap_report(int pid, char* name, uint64 scause, uint64 spec, uint64 stval);
+int             create_thread(uint64 funcaddr, uint64 argsaddr, uint64 stackaddr);
+int             stop_thread(int tid);
+int             join_thread(int tid);
 
 
+//
+int             get_cpu_usage();
+int             top_processes(struct top *top);
+int             set_cpu_quota(int pid, int quota);
+int             fork_deadline(int);
 
 // swtch.S
 void            swtch(struct context*, struct context*);
@@ -167,8 +166,6 @@ void            trapinit(void);
 void            trapinithart(void);
 extern struct spinlock tickslock;
 void            usertrapret(void);
-uint64          print_rt(void);
-uint64          load(void);
 
 // uart.c
 void            uartinit(void);
@@ -206,15 +203,6 @@ void            plic_complete(int);
 void            virtio_disk_init(void);
 void            virtio_disk_rw(struct buf *, int);
 void            virtio_disk_intr(void);
-
-// sysfile.c
-uint64          kfopen(char* path, int omode);
-uint64          kfclose(int fd);
-uint64          kfwrite(int fd, uint64 p, int n);
-uint64          kfread(int fd, uint64 p, int n);
-uint64          zero_offset(int fd);
-uint64          end_offset(int fd, int KOMAK);
-
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

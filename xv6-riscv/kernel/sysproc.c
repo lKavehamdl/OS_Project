@@ -5,6 +5,8 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "child.h"
+#include "report.h"
 
 uint64
 sys_exit(void)
@@ -91,49 +93,94 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
 uint64
-sys_create_thread(void){
+sys_childproc(void) 
+{
+  uint64 staddr;
+  argaddr(0, &staddr);
 
-  uint *thread_id;
-  void *(*function)(void *arg);
-  void *arg;
-  void *stack;
-  uint64 stack_size;
-  
-  argaddr(0, (uint64 *)&thread_id);
-  argaddr(1, (uint64 *)&function);
-  argaddr(2, (uint64 *)&arg);
-  argaddr(3, (uint64 *)&stack);
-  argaddr(4, (uint64 *)&stack_size);
+  struct child_processes children;
+  int res = child_processes(&children);
 
-  return create_thread(thread_id, function, arg, stack, stack_size);
-
+  copyout(myproc()->pagetable, staddr, (char *)&children, sizeof(children));
+  return res;
 }
 
 uint64
-sys_stop_thread(){
-  uint64 thread_id;
-  argaddr(0, &thread_id);
-  return stop_thread(thread_id);
+sys_rptraps(void)
+{
+  uint64 staddr;
+  argaddr(0, &staddr);
+
+  struct report_traps rp_traps;
+  int res = report_traps(&rp_traps);
+
+  copyout(myproc()->pagetable, staddr, (char *)&rp_traps, sizeof(rp_traps));
+  return res;
 }
 
 uint64
-sys_join_thread(){
-  uint64 thread_id;
-  argaddr(0, &thread_id);
-  return join_thread(thread_id);
+sys_create_thread(void) {
+  uint64 funcaddr;
+  uint64 argsaddr;
+  uint64 stackaddr;
+
+  argaddr(0, &funcaddr);
+  argaddr(1, &argsaddr);
+  argaddr(2, &stackaddr);
+
+  return create_thread(funcaddr, argsaddr, stackaddr);
 }
 
 uint64
-sys_cpu_usage(){
-  return cpu_usage();
+sys_stop_thread(void) {
+  int tid;
+
+  argint(0, &tid);
+
+  return stop_thread(tid);
 }
 
 uint64
-sys_set_cpu_quota(){
-  uint64 pid;
-  uint64 quota;
-  argaddr(0, &pid);
-  argaddr(1, &quota);
+sys_join_thread(void) {
+  int tid;
+  argint(0, &tid);
+  return join_thread(tid);
+}
+
+uint64
+sys_cpu_usage(void) {
+  return get_cpu_usage();
+}
+
+uint64
+sys_top(void) {
+  uint64 temp;
+  argaddr(0, &temp);
+
+  struct top top;
+  int res = top_processes(&top);
+
+  copyout(myproc()->pagetable, temp, (char *)&top, sizeof(top));
+  return res;
+}
+
+uint64
+sys_set_cpu_quota(void) {
+  int pid;
+  int quota;
+
+  argint(0, &pid);
+  argint(1, &quota);
+
   return set_cpu_quota(pid, quota);
+}
+
+uint64
+sys_fork_deadline(void) {
+  int deadline;
+  argint(0, &deadline);
+
+  return fork_deadline(deadline);
 }

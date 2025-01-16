@@ -20,16 +20,12 @@
 #define SYS_link   19
 #define SYS_mkdir  20
 #define SYS_close  21
-#define SYS_komak 22
-#define SYS_cp 23
-#define SYS_rt 24
-#define SYS_roffset 25
-#define SYS_ramload 26
-#define SYS_list 27
-//
-#define SYS_create_thread 28
-#define SYS_join_thread 29
-#define SYS_stop_thread 30
-#define SYS_cpu_usage 31
-#define SYS_top 32
-#define SYS_set_cpu_quota 33
+#define SYS_childproc 22
+#define SYS_rptraps 23
+#define SYS_create_thread 24
+#define SYS_stop_thread 25
+#define SYS_join_thread 26
+#define SYS_cpu_usage 27
+#define SYS_top 28
+#define SYS_set_cpu_quota 29
+#define SYS_fork_deadline 30

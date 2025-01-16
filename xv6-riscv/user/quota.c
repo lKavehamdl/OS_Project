@@ -2,11 +2,9 @@
 #include "kernel/stat.h"
 #include "user/user.h"
 
-
 char states_names[6][16] = {"UNUSED", "USED", "SLEEPING", "RUNNABLE", "RUNNING", "ZOMBIE"};
 
-
-void function(long long amount)
+void function(char* name, long long amount)
 {
     long long i = 0;
 
@@ -14,28 +12,51 @@ void function(long long amount)
     {
         i++;
     }
-    // while (i > 0)
-    // {
-    //     i--;
-    // }   
-    printf("Produced Number i: %lld\n", i);
+    while (i > 0)
+    {
+        i--;
+    }   
+    printf("%s finished\n", name);
 }
 
 int main(int argc, char const *argv[])
 {
-    
+
+
+    set_cpu_quota(getpid(), 100);
     int pid = fork();
     if (pid == 0)
     {
-        function(1e9);
-        printf("Child Process Finished - CPU Usage :%d\n",cpu_usage());
+        function("child B", 1e9);
         exit(0);
     }
 
+
+    set_cpu_quota(pid, 1000);
+    pid = fork();
+    if (pid == 0)
+    {
+        function("child C", 1e9);
+        exit(0);
+    }
+
+
+    
+    set_cpu_quota(pid, 1000);
+    pid = fork();
+    if (pid == 0)
+    {
+        function("child A", 1e6);
+        exit(0);
+    }
+
+
+
+    
+    set_cpu_quota(pid, 0);
+
     sleep(10);
     
-    function(1e8);
-
 
     /*copy this part in other test files*/
    
@@ -51,8 +72,13 @@ int main(int argc, char const *argv[])
       struct proc_info *p = &top_procs.processes[i];
       printf("\t%s \t%d \t%d \t%s \t%d\n",p->name,p->pid, p->ppid, states_names[p->state], p->usage.sum_of_ticks);
    }
-   
+
 
     wait(0);
+    wait(0);
+    wait(0);
+    wait(0);
+    wait(0);
+    
     return 0;
 }

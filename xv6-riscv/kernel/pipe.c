@@ -103,35 +103,6 @@ pipewrite(struct pipe *pi, uint64 addr, int n)
 }
 
 int
-kpipewrite(struct pipe *pi, uint64 addr, int n)
-{
-  int i = 0;
-  struct proc *pr = myproc();
-
-  acquire(&pi->lock);
-  while(i < n){
-    if(pi->readopen == 0 || killed(pr)){
-      release(&pi->lock);
-      return -1;
-    }
-    if(pi->nwrite == pi->nread + PIPESIZE){ //DOC: pipewrite-full
-      wakeup(&pi->nread);
-      sleep(&pi->nwrite, &pi->lock);
-    } else {
-      char ch;
-      strncpy(&ch, (char* )(addr+ i), 1);
-      pi->data[pi->nwrite++ % PIPESIZE] = ch;
-      i++;
-    }
-  }
-  wakeup(&pi->nread);
-  release(&pi->lock);
-
-  return i;
-}
-
-
-int
 piperead(struct pipe *pi, uint64 addr, int n)
 {
   int i;
@@ -152,34 +123,6 @@ piperead(struct pipe *pi, uint64 addr, int n)
     ch = pi->data[pi->nread++ % PIPESIZE];
     if(copyout(pr->pagetable, addr + i, &ch, 1) == -1)
       break;
-  }
-  wakeup(&pi->nwrite);  //DOC: piperead-wakeup
-  release(&pi->lock);
-  return i;
-}
-
-
-
-int
-kpiperead(struct pipe *pi, uint64 addr, int n)
-{
-  int i;
-  struct proc *pr = myproc();
-  char ch;
-
-  acquire(&pi->lock);
-  while(pi->nread == pi->nwrite && pi->writeopen){  //DOC: pipe-empty
-    if(killed(pr)){
-      release(&pi->lock);
-      return -1;
-    }
-    sleep(&pi->nread, &pi->lock); //DOC: piperead-sleep
-  }
-  for(i = 0; i < n; i++){  //DOC: piperead-copy
-    if(pi->nread == pi->nwrite)
-      break;
-    ch = pi->data[pi->nread++ % PIPESIZE];
-    strncpy((char*)(addr+i), &ch, 1);
   }
   wakeup(&pi->nwrite);  //DOC: piperead-wakeup
   release(&pi->lock);
